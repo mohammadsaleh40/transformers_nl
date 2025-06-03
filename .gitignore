@@ -1,0 +1,16 @@
+/__pycache__
+/best_model.keras
+/bird
+/car
+/data
+/digit_dataset
+/eagle
+/extract_egles.py
+/extract_object.py
+/extract_sparrow.py
+/folder_to_data.py
+/sparrow
+/tree
+/yolov8_use.py
+/yolov8m.pt
+/yolov8n.pt
