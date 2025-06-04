@@ -75,6 +75,35 @@ def create_cnn_model(input_shape=(128, 128, 1), num_classes=10):
     ])
     return model
 
+def create_unet_as_classifier(input_shape=(128, 128, 1), num_classes=10):
+    inputs = tf.keras.Input(shape=input_shape)
+
+    # ===== Contracting path (Encoder) =====
+    c1 = tf.keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(inputs)
+    c1 = tf.keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(c1)
+    p1 = tf.keras.layers.MaxPooling2D((2, 2))(c1)  # 64 × 64 × 64
+
+    c2 = tf.keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(p1)
+    c2 = tf.keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(c2)
+    p2 = tf.keras.layers.MaxPooling2D((2, 2))(c2)  # 32 × 32 × 128
+
+    c3 = tf.keras.layers.Conv2D(256, (3, 3), activation='relu', padding='same')(p2)
+    c3 = tf.keras.layers.Conv2D(256, (3, 3), activation='relu', padding='same')(c3)
+    p3 = tf.keras.layers.MaxPooling2D((2, 2))(c3)  # 16 × 16 × 256
+
+    # ===== Bottleneck =====
+    b = tf.keras.layers.Conv2D(256, (3, 3), activation='relu', padding='same')(p3)
+    b = tf.keras.layers.Conv2D(256, (3, 3), activation='relu', padding='same')(b)
+    # حجم در اینجا: 16 × 16 × 256
+
+    # ===== Classification head =====
+    x = tf.keras.layers.GlobalAveragePooling2D()(b)  # تبدیل به بردار 256‌بعدی
+    x = tf.keras.layers.Dense(256, activation='relu')(x)
+    outputs = tf.keras.layers.Dense(num_classes, activation='softmax')(x)
+
+    return tf.keras.Model(inputs=inputs, outputs=outputs)
+
+
 def create_hybrid_model(input_shape=(128, 128, 1), num_classes=10):
     inputs = tf.keras.Input(shape=input_shape)
 
@@ -211,7 +240,7 @@ def create_model(input_shape=(128, 128, 1), num_classes=10):
 
 # %%
 # 4. ساخت و کامپایل مدل
-vit_model = create_cnn_model()
+vit_model = create_unet_as_classifier()
 vit_model.compile(
     optimizer=tf.keras.optimizers.AdamW(learning_rate=1e-4),  # AdamW به جای Adam
     loss='sparse_categorical_crossentropy',
@@ -304,7 +333,4 @@ def visualize_predictions():
 
 # Run visualization
 visualize_predictions()
-# %%
-for name, var in vit_model.named_variables():
-    print(f"{name}: {var.numpy().mean():.4f}")
 # %%
