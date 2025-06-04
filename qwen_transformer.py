@@ -205,7 +205,7 @@ def create_model(input_shape=(128, 128, 1), num_classes=10):
     x_att = patches + position_embedding
     
     # دو لایه ترنسفورمر
-    for _ in range(4):
+    for _ in range(6):
         x_att = transformer_block(x_att)  # شکل خروجی: (4, 64)
     
     # تبدیل به فرمت تصویری
