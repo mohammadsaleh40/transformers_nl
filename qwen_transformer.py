@@ -169,7 +169,7 @@ def transformer_block(x, num_heads=8, key_dim=32):
     
     # MLP
     x3 = layers.Dense(256, activation='gelu')(x3)
-    x3 = layers.Dropout(0.2)(x3)
+    x3 = layers.Dropout(0.02)(x3)
     x3 = layers.Dense(x.shape[-1])(x3)
     
     # اتصال باقیمانده نهایی
