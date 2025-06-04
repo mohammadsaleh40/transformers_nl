@@ -232,7 +232,7 @@ def create_model(input_shape=(128, 128, 1), num_classes=10):
     # طبقه‌بندی
     x = layers.GlobalAveragePooling2D()(x)  # (32,)
     x = layers.Dense(256, activation='relu')(x)
-    x = layers.Dropout(0.1)(x)
+    x = layers.Dropout(0.4)(x)
     outputs = layers.Dense(num_classes, activation='softmax')(x)
     
     return Model(inputs=inputs, outputs=outputs)
