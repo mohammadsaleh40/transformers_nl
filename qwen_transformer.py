@@ -169,7 +169,7 @@ def transformer_block(x, num_heads=8, key_dim=32):
     
     # MLP
     x3 = layers.Dense(256, activation='gelu')(x3)
-    x3 = layers.Dropout(0.2)(x3)
+    x3 = layers.Dropout(0.1)(x3)
     x3 = layers.Dense(x.shape[-1])(x3)
     
     # اتصال باقیمانده نهایی
@@ -205,7 +205,7 @@ def create_model(input_shape=(128, 128, 1), num_classes=10):
     x_att = patches + position_embedding
     
     # دو لایه ترنسفورمر
-    for _ in range(5):
+    for _ in range(3):
         x_att = transformer_block(x_att)  # شکل خروجی: (4, 64)
     
     # تبدیل به فرمت تصویری
