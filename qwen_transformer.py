@@ -205,7 +205,7 @@ def create_model(input_shape=(128, 128, 1), num_classes=10):
     x_att = patches + position_embedding
     
     # دو لایه ترنسفورمر
-    for _ in range(7):
+    for _ in range(5):
         x_att = transformer_block(x_att)  # شکل خروجی: (4, 64)
     
     # تبدیل به فرمت تصویری
@@ -240,7 +240,7 @@ def create_model(input_shape=(128, 128, 1), num_classes=10):
 
 # %%
 # 4. ساخت و کامپایل مدل
-vit_model = create_unet_as_classifier()
+vit_model = create_model()
 vit_model.compile(
     optimizer=tf.keras.optimizers.AdamW(learning_rate=1e-4),  # AdamW به جای Adam
     loss='sparse_categorical_crossentropy',
