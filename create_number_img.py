@@ -1,6 +1,7 @@
 import os
 import random
 from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 
 def generate_digit_dataset(
     digits,
@@ -10,7 +11,8 @@ def generate_digit_dataset(
     font_size_range=(3, 15),
     margin=3,
     images_per_digit=100,
-    max_retries=100
+    max_retries=100,
+    noise_std=3  # پارامتر جدید برای شدت نویز
 ):
     """
     تولید دیتاست تصویری اعداد با تنوع زیاد و نام‌گذاری استاندارد
@@ -82,6 +84,23 @@ def generate_digit_dataset(
                     # چسباندن تصویر چرخانده شده
                     main_img.paste(rotated_img, (x, y), rotated_img)
 
+                    # افزودن نویز گوسی به تصویر
+                    if noise_std > 0:
+                        # تبدیل تصویر به آرایه numpy
+                        img_array = np.array(main_img).astype(np.float32)
+                        
+                        # تولید نویز گوسی
+                        noise = np.random.normal(0, noise_std, img_array.shape)
+                        
+                        # اعمال نویز به تصویر
+                        noisy_array = img_array + noise
+                        
+                        # محدود کردن مقادیر به بازه [0, 255]
+                        noisy_array = np.clip(noisy_array, 0, 255).astype(np.uint8)
+                        
+                        # تبدیل به تصویر
+                        main_img = Image.fromarray(noisy_array)
+
                     # ذخیره تصویر
                     filename = f"{digit}_{idx}.png"
                     output_path = os.path.join(output_dir, filename)
@@ -108,7 +127,8 @@ if __name__ == "__main__":
         "Amiri Quran Colored.ttf",
         "Far.Yas.ttf",
         "B Moj.ttf",
-        "A Iranian Sans.ttf"
+        "A Iranian Sans.ttf",
+        "B Koodak.ttf",
         
     ]
 
@@ -117,10 +137,11 @@ if __name__ == "__main__":
         font_paths=font_paths,
         output_dir="digit_dataset",
         image_size=(128, 128),
-        font_size_range=(40, 60),
+        font_size_range=(40, 70),
         margin=15,
         images_per_digit=1000,
-        max_retries=50
+        max_retries=50,
+        noise_std= 25  # افزودن نویز با انحراف معیار 5
     )
 
 # %%

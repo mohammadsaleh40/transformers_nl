@@ -3,6 +3,8 @@ import tensorflow as tf
 import os
 import numpy as np
 from tensorflow.keras import layers , Model
+import matplotlib.pyplot as plt
+
 # %%
 # 1. پیش‌پردازش داده‌ها
 def preprocess_image(path):
@@ -65,8 +67,10 @@ def create_cnn_model(input_shape=(128, 128, 1), num_classes=10):
         tf.keras.layers.MaxPooling2D((2, 2)),
         tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
         tf.keras.layers.MaxPooling2D((2, 2)),
+        tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D((2, 2)),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(256, activation='relu'),
         tf.keras.layers.Dense(num_classes, activation='softmax')
     ])
     return model
@@ -172,7 +176,7 @@ def create_model(input_shape=(128, 128, 1), num_classes=10):
     x_att = patches + position_embedding
     
     # دو لایه ترنسفورمر
-    for _ in range(4):
+    for _ in range(7):
         x_att = transformer_block(x_att)  # شکل خروجی: (4, 64)
     
     # تبدیل به فرمت تصویری
@@ -207,7 +211,7 @@ def create_model(input_shape=(128, 128, 1), num_classes=10):
 
 # %%
 # 4. ساخت و کامپایل مدل
-vit_model = create_model()
+vit_model = create_cnn_model()
 vit_model.compile(
     optimizer=tf.keras.optimizers.AdamW(learning_rate=1e-4),  # AdamW به جای Adam
     loss='sparse_categorical_crossentropy',
@@ -230,16 +234,7 @@ callbacks = [
     tf.keras.callbacks.ModelCheckpoint('best_model.keras'),
     tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, min_lr=1e-6)
 ]
-# %%
-# %%
-import matplotlib.pyplot as plt
 
-# نمایش یک تصویر تصادفی
-sample_image = tf.io.read_file('digit_dataset/0_0.png')
-sample_image = tf.io.decode_png(sample_image, channels=3)
-plt.imshow(sample_image.numpy())
-plt.title("Sample Image")
-plt.show()
 # %%
 
 # %%
