@@ -129,6 +129,8 @@ if __name__ == "__main__":
         "B Moj.ttf",
         "A Iranian Sans.ttf",
         "B Koodak.ttf",
+        "Mj_Meem Medium",
+        "2 Hamid_YasDL.com.ttf"
         
     ]
 
@@ -137,7 +139,7 @@ if __name__ == "__main__":
         font_paths=font_paths,
         output_dir="digit_dataset",
         image_size=(128, 128),
-        font_size_range=(40, 70),
+        font_size_range=(20, 60),
         margin=15,
         images_per_digit=1000,
         max_retries=50,
