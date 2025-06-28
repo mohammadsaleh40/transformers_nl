@@ -29,7 +29,7 @@ class LayerScale(tf.keras.layers.Layer):
     def call(self, x):
         return x * self.gamma
 # --- Hyperparameters ---
-BATCH_SIZE = 128                # اندازه بچ (قابل تغییر)
+BATCH_SIZE = 64                # اندازه بچ (قابل تغییر)
 LEARNING_RATE = 1e-4           # نرخ یادگیری
 EPOCHS = 40                    # تعداد ایپاک‌ها
 EARLY_STOPPING_PATIENCE = 10   # تعداد دوره‌های صبر برای Early Stopping

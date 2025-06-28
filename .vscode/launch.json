@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run C++ Program",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/text_to_img",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "Build C++ HarfBuzz App",  // این بخش مهمه
+      "miDebuggerPath": "/usr/bin/gdb"
+    }
+  ]
+}

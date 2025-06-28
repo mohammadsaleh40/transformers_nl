@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build C++ HarfBuzz App",
+      "type": "shell",
+      "command": "g++",
+      "args": [
+        "-std=c++17",
+        "text_to_img.cpp",
+        "-o",
+        "text_to_img",
+        "-I/usr/include/harfbuzz",
+        "-I/usr/include/freetype2",
+        "-lfreetype",
+        "-lharfbuzz"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    }
+  ]
+}
