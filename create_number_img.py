@@ -123,15 +123,20 @@ def generate_digit_dataset(
 if __name__ == "__main__":
     digits = [str(i) for i in range(10)]  # ['0', '1', ..., '9']
     font_paths = [
-        "danstevis.otf",
-        "Amiri Quran Colored.ttf",
-        "Far.Yas.ttf",
-        "B Moj.ttf",
-        "A Iranian Sans.ttf",
-        "B Koodak.ttf",
-        "Mj_Meem Medium",
-        "2 Hamid_YasDL.com.ttf"
+        # "danstevis.otf",
+        # "Amiri Quran Colored.ttf",
+        # "Far.Yas.ttf",
+        # "B Moj.ttf",
+        # "A Iranian Sans.ttf",
+        # "B Koodak.ttf",
+        # "Mj_Meem Medium",
+        # "2 Hamid_YasDL.com.ttf",
+        "fonts/B Moj_YasDL.com.ttf",        
+        "fonts/danstevis.otf",
         
+        
+        "fonts/B Koodak Bold_YasDL.com.ttf",
+        "fonts/B Hamid_YasDL.com.ttf",
     ]
 
     generate_digit_dataset(

@@ -1,10 +1,11 @@
+
 # %%
 import tensorflow as tf
 import os
 import numpy as np
 from tensorflow.keras import layers , Model
 import matplotlib.pyplot as plt
-
+import time
 # %%
 # 1. پیش‌پردازش داده‌ها
 def preprocess_image(path):
@@ -29,7 +30,7 @@ class LayerScale(tf.keras.layers.Layer):
     def call(self, x):
         return x * self.gamma
 # --- Hyperparameters ---
-BATCH_SIZE = 64                # اندازه بچ (قابل تغییر)
+BATCH_SIZE = 512                # اندازه بچ (قابل تغییر)
 LEARNING_RATE = 1e-4           # نرخ یادگیری
 EPOCHS = 40                    # تعداد ایپاک‌ها
 EARLY_STOPPING_PATIENCE = 10   # تعداد دوره‌های صبر برای Early Stopping
@@ -40,8 +41,9 @@ image_paths = tf.data.Dataset.list_files('digit_dataset/*.png', shuffle=True)
 dataset = image_paths.map(preprocess_image)
 
 # تقسیم داده‌ها به train/test
-train_size = int(0.8 * 10000)  # 8000 تصویر برای آموزش
-val_size = 10000 - train_size  # 2000 تصویر برای اعتبارسنجی
+n_imgs= 10000
+train_size = int(0.8 * n_imgs)  # 8000 تصویر برای آموزش
+val_size = n_imgs - train_size  # 2000 تصویر برای اعتبارسنجی
 train_dataset = dataset.take(train_size).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 val_dataset = dataset.skip(train_size).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
@@ -59,6 +61,30 @@ class PatchEncoder(tf.keras.layers.Layer):
         positions = tf.range(start=0, limit=self.num_patches, delta=1)
         encoded = self.projection(patch) + self.position_embedding(positions)
         return encoded
+@tf.keras.utils.register_keras_serializable()
+class MHAWithScores(tf.keras.layers.MultiHeadAttention):
+    def call(
+        self,
+        query,
+        value,
+        key=None,
+        attention_mask=None,
+        training=None,
+        **kwargs
+    ):
+        y, scores = super().call(
+            query,
+            value,
+            key=key,
+            attention_mask=attention_mask,
+            return_attention_scores=True,
+            training=training,
+            **kwargs
+        )
+        self.last_scores = scores   # (batch, heads, Q, K)
+        return y                    # فقط همان خروجی اصلی را به گراف می‌دهیم
+
+
 # این مدل به دقت ۱۰۰ درصدی رسید.
 # %%
 def create_cnn_model(input_shape=(128, 128, 1), num_classes=10):
@@ -157,9 +183,9 @@ def transformer_block(x, num_heads=8, key_dim=32):
     x1 = layers.LayerNormalization(epsilon=1e-6)(x)
     
     # توجه چندهدفه
-    attention_output = layers.MultiHeadAttention(
-        num_heads=num_heads, key_dim=key_dim
-    )(x1, x1)
+    attention_output = MHAWithScores(num_heads=num_heads,
+                                     key_dim=key_dim,
+                                     dropout=0.1)(x1, x1)
     
     # اتصال باقیمانده
     x2 = layers.Add()([attention_output, x])
@@ -205,7 +231,7 @@ def create_model(input_shape=(128, 128, 1), num_classes=10):
     x_att = patches + position_embedding
     
     # دو لایه ترنسفورمر
-    for _ in range(6):
+    for _ in range(4):
         x_att = transformer_block(x_att)  # شکل خروجی: (4, 64)
     
     # تبدیل به فرمت تصویری
@@ -232,7 +258,7 @@ def create_model(input_shape=(128, 128, 1), num_classes=10):
     # طبقه‌بندی
     x = layers.GlobalAveragePooling2D()(x)  # (32,)
     x = layers.Dense(256, activation='relu')(x)
-    x = layers.Dropout(0.4)(x)
+    x = layers.Dropout(0.3)(x)
     outputs = layers.Dense(num_classes, activation='softmax')(x)
     
     return Model(inputs=inputs, outputs=outputs)
@@ -268,16 +294,76 @@ callbacks = [
 
 # %%
 # 5. آموزش مدل
+start_time = time.perf_counter()
 vit_model.fit(
     train_dataset,
     validation_data=val_dataset,
     epochs=EPOCHS,
     callbacks=callbacks,
 )
-
+end_time = time.perf_counter()
+elapsed_time = end_time - start_time
+elapsed_time = end_time - start_time
+elapsed_time1 =elapsed_time // 60
+elapsed_time2 =(elapsed_time % 60)
+print(f"Execution time: {elapsed_time1:.0f}:{elapsed_time2:.4f} seconds")
 # %%
 loss, accuracy = vit_model.evaluate(val_dataset)
 print(f"Validation Accuracy: {accuracy:.2f}")
+# %%
+def attention_to_heatmap(scores, up=64):
+    """
+    scores: (H, Q=4, K=4) → بر اساس نیاز لایهٔ دلخواه یکی را برمی‌داریم
+    خروجی: heatmap ۱۲۸×۱۲۸
+    """
+    # ۱) میانگین روی هدها             (Q, K)
+    attn = scores.mean(axis=0)
+    # ۲) میانگین ردیف*ها (یا ستون‌ها)  (K,)   ← توجهِ کلی به هر پچ
+    attn = attn.mean(axis=0)
+    # ۳) reshape به شبکهٔ ۲×۲
+    attn = attn.reshape(2, 2)
+    # ۴) Upsample → ۱۲۸×۱۲۸
+    attn = tf.image.resize(attn[..., None], [128, 128],
+                           method='bilinear').numpy().squeeze()
+    # نرمال‌سازی برای راحتی نمایش
+    attn = (attn - attn.min()) / (attn.max() - attn.min() + 1e-8)
+    return attn
+import matplotlib.pyplot as plt
+import numpy as np
+
+# یک تصویر تصادفی از دیتاست
+sample_path = 'digit_dataset/7_42.png'
+img_tensor, _ = preprocess_image(sample_path)
+img_batch = tf.expand_dims(img_tensor, 0)
+
+# استنتاج
+outputs = vit_model(img_batch, training=False)
+logits  = outputs
+# 1) یک فوروارد برای پرکردن last_scores
+_ = vit_model(img_batch, training=False)
+
+# 2) پیدا کردن همهٔ لایه‌های attention
+mha_layers = [l for l in vit_model.layers if isinstance(l, MHAWithScores)]
+
+# 3) استخراج نقشهٔ هر لایه (برای batch=1 ⇒ [0])
+scores_list = [l.last_scores.numpy()[0] for l in mha_layers]  # هرکدام (H, 4, 4)
+
+# 4) تبدیل به هیت‌مپ و نمایش
+maps = [attention_to_heatmap(sc) for sc in scores_list]
+
+plt.figure(figsize=(10, 3))
+plt.subplot(1, len(maps)+1, 1)
+plt.imshow(img_tensor.numpy().squeeze(), cmap='gray')
+plt.title('Input'); plt.axis('off')
+
+for i, m in enumerate(maps, 1):
+    plt.subplot(1, len(maps)+1, i+1)
+    plt.imshow(img_tensor.numpy().squeeze(), cmap='gray')
+    plt.imshow(m, alpha=0.6)
+    plt.title(f'Attn L{i}'); plt.axis('off')
+plt.tight_layout(); plt.show()
+
+
 # %%
 # 6. مثال استفاده از مدل
 
